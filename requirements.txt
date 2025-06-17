@@ -1,0 +1,4 @@
+openai==1.75.0
+mcp-cli==1.6.0
+python-dotenv
+nest_asyncio
