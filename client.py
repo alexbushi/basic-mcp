@@ -62,26 +62,39 @@ class MCPOpenAIClient:
         """Process a query using OpenAI and available MCP tools."""
         tools = await self.get_mcp_tools()
 
-        # Initial request
-        response = await self._send_to_openai(query, tools)
+        response = await self._send_to_openai(query, [], tools, True)
         assistant_message = response.choices[0].message
         messages = [{"role": "user", "content": query}, assistant_message]
 
         if not assistant_message.tool_calls:
             return assistant_message.content
+        else:
+            print(f"Tool calling: {assistant_message.tool_calls}")
 
         # Process tool calls and augment messages
         await self._handle_tool_calls(assistant_message.tool_calls, messages)
 
-        final_response = await self._send_to_openai(messages=messages, tools=tools, allow_tool_calls=False)
+        final_response = await self._send_to_openai("", messages=messages, tools=tools, allow_tool_calls=False)
         return final_response.choices[0].message.content
 
 
-    async def _send_to_openai(self, query: str = None, messages: list = None, tools=None, allow_tool_calls=True):
+    async def _send_to_openai(
+        self,
+        query: Optional[str] = None,
+        messages: Optional[List[Dict[str, str]]] = None,
+        tools: Optional[List[Dict[str, Any]]] = None,
+        allow_tool_calls: bool = True,
+    ):
         """Send message(s) to OpenAI with optional tool call support."""
+        if not messages and not query:
+            raise ValueError("Either 'query' or 'messages' must be provided.")
+
+        if not messages:
+            messages = [{"role": "user", "content": query}]
+
         return await self.openai_client.chat.completions.create(
             model=self.model,
-            messages=messages or [{"role": "user", "content": query}],
+            messages=messages,
             tools=tools,
             tool_choice="auto" if allow_tool_calls else "none",
         )
@@ -112,7 +125,7 @@ async def main():
         async with ClientSession(read_stream, write_stream) as session:
             await client.connect_to_server(session)
 
-            query = "What is our company's vacation policy?"
+            query = "What's 1 plus 1?"
             print(f"\nQuery: {query}")
 
             response = await client.process_query(query)
