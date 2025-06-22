@@ -1,3 +1,7 @@
+## About
+Creates a basic MCP SSE server that has one tool ```add``` that adds two numbers together.
+Also contains client code with a query to add two numbers, so that this tool will be executed.
+
 ## Running with Docker
 
 ### Step 1: Build the Docker image
